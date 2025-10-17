@@ -6,8 +6,9 @@
     <title>Problem Canvas Builder</title>
     <style>
         @media print {
-            .controls, .edit-mode { display: none !important; }
+            .controls, .sidebar, .edit-mode { display: none !important; }
             body { margin: 0; padding: 0; background: white; }
+            .main-content { margin-left: 0 !important; }
             .canvas { box-shadow: none; margin: 0; }
         }
         
@@ -20,20 +21,153 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #f5f5f5;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .sidebar-header {
             padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .sidebar-header h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .sidebar-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .sidebar-actions button {
+            flex: 1;
+            padding: 8px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .sidebar-actions button:hover {
+            background: #444;
+        }
+        
+        .canvas-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .canvas-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .canvas-item:hover {
+            background: #e8e8e8;
+        }
+        
+        .canvas-item.active {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .canvas-item-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .canvas-item-meta {
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .delete-canvas {
+            padding: 4px 8px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        .delete-canvas:hover {
+            background: #d32f2f;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         
         .controls {
-            max-width: 1200px;
-            margin: 0 auto 20px;
             background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
             align-items: center;
+        }
+        
+        .toggle-sections {
+            display: flex;
+            gap: 8px;
+            margin-left: 20px;
+            padding-left: 20px;
+            border-left: 1px solid #ddd;
+        }
+        
+        .toggle-btn {
+            padding: 6px 12px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .toggle-btn.hidden {
+            background: #ffebee;
+            color: #c62828;
+            border-color: #f44336;
+            opacity: 0.6;
+        }
+        
+        .toggle-btn:hover {
+            opacity: 0.8;
+        }
+        
+        .section.hidden-section {
+            display: none;
         }
         
         .btn {
@@ -78,18 +212,20 @@
         }
         
         .canvas-container {
-            max-width: 1200px;
-            margin: 0 auto;
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
         }
         
         .canvas {
-            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
             background: white;
             padding: 30px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: auto repeat(3, 1fr);
+            grid-template-rows: auto repeat(3, 1fr) auto;
             gap: 12px;
         }
         
@@ -184,251 +320,512 @@
         
         .problem-statement { grid-column: 1 / 3; background: #fff5e6; border-color: #ff9800; }
         .context { grid-column: 3 / 5; background: #ffebee; border-color: #e53935; }
+        .context.hidden-section ~ .problem-statement { grid-column: 1 / 5; }
         .current-state { grid-column: 1 / 2; }
         .root-causes { grid-column: 2 / 3; background: #f3e5f5; border-color: #9c27b0; }
         .desired-state { grid-column: 3 / 4; background: #e8f5e9; border-color: #4caf50; }
         .impact-areas { grid-column: 4 / 5; }
-        .solution-1 { grid-column: 1 / 3; background: #e3f2fd; border-color: #2196f3; }
-        .solution-2 { grid-column: 3 / 5; background: #e3f2fd; border-color: #2196f3; }
+        .impact-areas:has(~ .desired-state.hidden-section) { grid-column: 3 / 5; }
+        .solutions-container { grid-column: 1 / 5; }
         .stakeholders { grid-column: 1 / 2; }
         .recommendation { grid-column: 2 / 4; background: #fff9e6; border-color: #ffc107; }
+        .recommendation:has(~ .stakeholders.hidden-section) { grid-column: 1 / 4; }
         .next-steps { grid-column: 4 / 5; background: #e8f5e9; border-color: #4caf50; }
+        
+        .solutions-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .solution-item {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+        }
+        
+        .solution-section {
+            border: 2px solid #2196f3;
+            padding: 12px;
+            background: #e3f2fd;
+            display: flex;
+            flex-direction: column;
+            min-height: 120px;
+        }
+        
+        .solution-delete {
+            align-self: start;
+            padding: 8px 12px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .solution-delete:hover {
+            background: #d32f2f;
+        }
+        
+        .add-solution-btn {
+            padding: 12px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .add-solution-btn:hover {
+            background: #1976d2;
+        }
         
         .mode-toggle {
             margin-left: auto;
             font-size: 14px;
             color: #666;
         }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
-    <div class="controls">
-        <button class="btn btn-primary" onclick="newCanvas()">🆕 Nieuw Canvas</button>
-        <button class="btn btn-secondary" onclick="downloadCanvas()">💾 Download JSON</button>
-        <label class="btn btn-secondary" for="upload">📂 Upload JSON</label>
-        <input type="file" id="upload" accept=".json" onchange="uploadCanvas(event)">
-        <button class="btn btn-success" onclick="window.print()">🖨️ Print / PDF</button>
-        <span class="mode-toggle">✏️ Edit mode actief</span>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>📋 Mijn Canvassen</h2>
+            <div class="sidebar-actions">
+                <button onclick="exportAllCanvases()">💾 Export</button>
+                <label style="cursor: pointer; text-align: center;">
+                    📂 Import
+                    <input type="file" id="importFile" accept=".json" onchange="importAllCanvases(event)">
+                </label>
+            </div>
+        </div>
+        <div class="canvas-list" id="canvasList"></div>
     </div>
     
-    <div class="canvas-container">
-        <div class="canvas">
-            <!-- Header -->
-            <div class="header">
-                <input type="text" id="title" placeholder="Probleem titel..." value="Testing Lambda & Step Functions">
-                <div class="impact-score">
-                    <span>Impact:</span>
-                    <span id="stars"></span>
-                </div>
+    <div class="main-content">
+        <div class="controls">
+            <button class="btn btn-primary" onclick="createNewCanvas()">➕ Nieuw Canvas</button>
+            <button class="btn btn-success" onclick="window.print()">🖨️ Print Huidig Canvas</button>
+            
+            <div class="toggle-sections">
+                <button class="toggle-btn" id="toggleContext" onclick="toggleSection('context')">
+                    ✓ Context
+                </button>
+                <button class="toggle-btn" id="toggleDesired" onclick="toggleSection('desired')">
+                    ✓ Desired State
+                </button>
+                <button class="toggle-btn" id="toggleStakeholders" onclick="toggleSection('stakeholders')">
+                    ✓ Stakeholders
+                </button>
             </div>
             
-            <!-- Row 1 -->
-            <div class="section problem-statement">
-                <div class="section-title">🎯 Problem Statement</div>
-                <div class="section-content">
-                    <textarea id="problem" placeholder="Beschrijf het kernprobleem...">We kunnen Lambda's en Step Functions niet adequaat testen voor deployment, wat leidt tot production issues en vertraagde releases.
-
-▸ End-to-end testing ontbreekt volledig
-▸ Lokale test omgeving is niet representatief
-▸ Issues worden pas in late testing/prod ontdekt
-▸ Confidence in releases is laag</textarea>
-                </div>
-            </div>
-            
-            <div class="section context">
-                <div class="section-title">🔥 Context - Waarom Nu Urgent?</div>
-                <div class="section-content">
-                    <textarea id="context" placeholder="Waarom is dit nu urgent?">▸ Laatste 2 sprints: 4 critical bugs in productie door ongeteste integraties
-▸ Planning impact: Gemiddeld 3 dagen vertraging per feature door late discovery
-▸ Cluster lead: Vertrouwen in delivery capability is zoek
-▸ Feature theatre: Features "done" maar niet production-ready</textarea>
-                </div>
-            </div>
-            
-            <!-- Row 2 -->
-            <div class="section current-state">
-                <div class="section-title">📸 Current State</div>
-                <div class="section-content">
-                    <textarea id="current" placeholder="Wat zien we nu? (feiten)">▸ Unit tests alleen (mocks)
-▸ Geen staging environment voor AWS services
-▸ Manual testing in dev account
-▸ Step Function state machines niet getest
-
-Metrics:
-• Bug escape rate: 65%
-• Rework: ~30% sprint capacity</textarea>
-                </div>
-            </div>
-            
-            <div class="section root-causes">
-                <div class="section-title">🔍 Root Causes</div>
-                <div class="section-content">
-                    <textarea id="rootcauses" placeholder="Waarom gebeurt dit?">▸ Infrastructure: Geen geïsoleerde test AWS accounts
-▸ Kennis: Team onbekend met AWS testing best practices
-▸ Tooling: LocalStack setup niet compleet/stabiel
-▸ Process: DoD checkt niet op integration tests
-▸ Cultuur: "Test in prod" mindset door gebrek aan alternatieven</textarea>
-                </div>
-            </div>
-            
-            <div class="section desired-state">
-                <div class="section-title">✨ Desired State</div>
-                <div class="section-content">
-                    <textarea id="desired" placeholder="Hoe zou het eruit moeten zien?">▸ Geautomatiseerde e2e tests in CI/CD
-▸ Confidence score >90% bij deploy
-▸ Bug escape rate <20%
-▸ Voorspelbare delivery timelines
-▸ Self-service test environments
-
-Succes metrics:
-• Zero prod issues door test gaps
-• Test coverage >75%</textarea>
-                </div>
-            </div>
-            
-            <div class="section impact-areas">
-                <div class="section-title">💥 Impact Op</div>
-                <div class="section-content">
-                    <textarea id="impact" placeholder="Wat is de impact?">▸ Quality: Prod bugs, hotfixes, tech debt
-▸ Trust: Stakeholder confidence daalt, team morale laag
-▸ Delivery: Onvoorspelbaar, veel rework
-▸ Kosten: Wasted effort, overtime
-▸ DX: Frustratie, fear of deploy</textarea>
-                </div>
-            </div>
-            
-            <!-- Row 3 -->
-            <div class="section solution-1">
-                <div class="section-title">💡 Oplossing 1</div>
-                <div class="section-content">
-                    <textarea id="solution1" placeholder="Eerste oplossing...">AWS Testing Pipeline
-Dedicated test AWS account met automated teardown + Step Functions testing framework
-
-Feasibility: 🟢 Hoog | Effort: 🔨🔨🔨
-
-▸ Pro: Realistische test omgeving, schaalbaar
-▸ Pro: Industry standard approach
-▸ Con: AWS kosten (~€500/maand), setup tijd
-▸ Vereist: AWS account, IaC, 2 weken dev tijd, training</textarea>
-                </div>
-            </div>
-            
-            <div class="section solution-2">
-                <div class="section-title">💡 Oplossing 2</div>
-                <div class="section-content">
-                    <textarea id="solution2" placeholder="Tweede oplossing...">Enhanced LocalStack + Contract Testing
-Volledige LocalStack Pro setup + consumer-driven contract tests
-
-Feasibility: 🟡 Middel | Effort: 🔨🔨
-
-▸ Pro: Sneller, geen cloud kosten, lokaal development
-▸ Con: Niet 100% AWS parity, extra maintenance
-▸ Con: LocalStack Pro license kosten
-▸ Vereist: LocalStack expertise, 1 week setup, docs</textarea>
-                </div>
-            </div>
-            
-            <!-- Row 4 -->
-            <div class="section stakeholders">
-                <div class="section-title">👥 Stakeholders</div>
-                <div class="section-content">
-                    <textarea id="stakeholders" placeholder="Wie moet erbij betrokken worden?">▸ Beslisser: Cluster Lead + Arch
-▸ Input: DevOps, Senior devs
-▸ Owner: Tech Lead
-▸ Informeren: PO, andere teams</textarea>
-                </div>
-            </div>
-            
-            <div class="section recommendation">
-                <div class="section-title">🚦 Aanbeveling</div>
-                <div class="section-content">
-                    <textarea id="recommendation" placeholder="Wat is de aanbeveling?">Hybride aanpak: Start met Oplossing 1 (AWS test account) voor critical paths, combineer met verbeterde LocalStack voor rapid development.
-
-Rationale: Geeft beste balans tussen betrouwbaarheid en development speed. ROI binnen 6 weken door vermeden production issues.</textarea>
-                </div>
-            </div>
-            
-            <div class="section next-steps">
-                <div class="section-title">📋 Next Steps</div>
-                <div class="section-content">
-                    <textarea id="nextsteps" placeholder="Concrete acties...">▸ Workshop team: testing strategy (deze week)
-▸ AWS test account aanvragen (Frederik)
-▸ PoC Step Functions testing framework (Sprint +1)
-▸ DoD update: integratie tests verplicht
-▸ Retro: wat moet anders in gedrag/proces?</textarea>
-                </div>
-            </div>
+            <span class="mode-toggle">✏️ Edit mode actief</span>
+        </div>
+        
+        <div class="canvas-container">
+            <div id="canvasContent"></div>
         </div>
     </div>
     
     <script>
-        let currentRating = 5;
+        let canvases = [];
+        let activeCanvasId = null;
+        
+        function getVisibleSections() {
+            const canvas = getActiveCanvas();
+            return canvas?.visibleSections || {
+                context: true,
+                desired: true,
+                stakeholders: true
+            };
+        }
+        
+        function toggleSection(section) {
+            const canvas = getActiveCanvas();
+            if (!canvas) return;
+            
+            if (!canvas.visibleSections) {
+                canvas.visibleSections = {
+                    context: true,
+                    desired: true,
+                    stakeholders: true
+                };
+            }
+            
+            canvas.visibleSections[section] = !canvas.visibleSections[section];
+            saveToLocalStorage();
+            updateToggleButtons();
+            renderActiveCanvas();
+        }
+        
+        function updateToggleButtons() {
+            const sections = getVisibleSections();
+            
+            const contextBtn = document.getElementById('toggleContext');
+            const desiredBtn = document.getElementById('toggleDesired');
+            const stakeholdersBtn = document.getElementById('toggleStakeholders');
+            
+            if (contextBtn) {
+                contextBtn.className = sections.context ? 'toggle-btn' : 'toggle-btn hidden';
+                contextBtn.textContent = sections.context ? '✓ Context' : '✗ Context';
+            }
+            if (desiredBtn) {
+                desiredBtn.className = sections.desired ? 'toggle-btn' : 'toggle-btn hidden';
+                desiredBtn.textContent = sections.desired ? '✓ Desired State' : '✗ Desired State';
+            }
+            if (stakeholdersBtn) {
+                stakeholdersBtn.className = sections.stakeholders ? 'toggle-btn' : 'toggle-btn hidden';
+                stakeholdersBtn.textContent = sections.stakeholders ? '✓ Stakeholders' : '✗ Stakeholders';
+            }
+        }
+        
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+        
+        function createEmptyCanvas() {
+            return {
+                id: generateId(),
+                title: 'Nieuw Canvas',
+                rating: 3,
+                problem: '',
+                context: '',
+                current: '',
+                rootcauses: '',
+                desired: '',
+                impact: '',
+                solutions: [
+                    { id: generateId(), content: '' }
+                ],
+                stakeholders: '',
+                recommendation: '',
+                nextsteps: '',
+                visibleSections: {
+                    context: true,
+                    desired: true,
+                    stakeholders: true
+                },
+                createdAt: new Date().toISOString()
+            };
+        }
+        
+        function createNewCanvas() {
+            const canvas = createEmptyCanvas();
+            canvases.push(canvas);
+            activeCanvasId = canvas.id;
+            saveToLocalStorage();
+            renderCanvasList();
+            renderActiveCanvas();
+        }
+        
+        function deleteCanvas(id) {
+            if (!confirm('Weet je zeker dat je dit canvas wilt verwijderen?')) return;
+            
+            canvases = canvases.filter(c => c.id !== id);
+            
+            if (activeCanvasId === id) {
+                activeCanvasId = canvases.length > 0 ? canvases[0].id : null;
+            }
+            
+            saveToLocalStorage();
+            renderCanvasList();
+            renderActiveCanvas();
+        }
+        
+        function selectCanvas(id) {
+            activeCanvasId = id;
+            renderCanvasList();
+            renderActiveCanvas();
+            updateToggleButtons();
+        }
+        
+        function getActiveCanvas() {
+            return canvases.find(c => c.id === activeCanvasId);
+        }
+        
+        function updateActiveCanvas(updates) {
+            const canvas = getActiveCanvas();
+            if (!canvas) return;
+            
+            Object.assign(canvas, updates);
+            saveToLocalStorage();
+            renderCanvasList();
+        }
+        
+        function addSolution() {
+            const canvas = getActiveCanvas();
+            if (!canvas) return;
+            
+            canvas.solutions.push({ id: generateId(), content: '' });
+            saveToLocalStorage();
+            renderActiveCanvas();
+        }
+        
+        function deleteSolution(solutionId) {
+            const canvas = getActiveCanvas();
+            if (!canvas) return;
+            
+            if (canvas.solutions.length <= 1) {
+                alert('Je moet minimaal 1 oplossing hebben');
+                return;
+            }
+            
+            canvas.solutions = canvas.solutions.filter(s => s.id !== solutionId);
+            saveToLocalStorage();
+            renderActiveCanvas();
+        }
+        
+        function updateSolution(solutionId, content) {
+            const canvas = getActiveCanvas();
+            if (!canvas) return;
+            
+            const solution = canvas.solutions.find(s => s.id === solutionId);
+            if (solution) {
+                solution.content = content;
+                saveToLocalStorage();
+            }
+        }
+        
+        function renderCanvasList() {
+            const listEl = document.getElementById('canvasList');
+            
+            if (canvases.length === 0) {
+                listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Nog geen canvassen.<br>Klik op "Nieuw Canvas"</div>';
+                return;
+            }
+            
+            listEl.innerHTML = canvases.map(canvas => `
+                <div class="canvas-item ${canvas.id === activeCanvasId ? 'active' : ''}" onclick="selectCanvas('${canvas.id}')">
+                    <div class="canvas-item-title">
+                        <span>${canvas.title || 'Nieuw Canvas'}</span>
+                        <button class="delete-canvas" onclick="event.stopPropagation(); deleteCanvas('${canvas.id}')">🗑️</button>
+                    </div>
+                    <div class="canvas-item-meta">
+                        ${'⭐️'.repeat(canvas.rating)} • ${canvas.solutions.length} oplossing(en)
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function renderActiveCanvas() {
+            const canvas = getActiveCanvas();
+            const contentEl = document.getElementById('canvasContent');
+            
+            if (!canvas) {
+                contentEl.innerHTML = '<div class="empty-state"><h3>Geen canvas geselecteerd</h3><p>Maak een nieuw canvas of selecteer er één uit de lijst</p></div>';
+                return;
+            }
+            
+            // Ensure visibleSections exists for older canvases
+            if (!canvas.visibleSections) {
+                canvas.visibleSections = {
+                    context: true,
+                    desired: true,
+                    stakeholders: true
+                };
+            }
+            
+            const sections = canvas.visibleSections;
+            
+            const solutionsHtml = canvas.solutions.map((solution, idx) => `
+                <div class="solution-item">
+                    <div class="solution-section">
+                        <div class="section-title">💡 Oplossing ${idx + 1}</div>
+                        <div class="section-content">
+                            <textarea 
+                                placeholder="Beschrijf de oplossing...
+
+Feasibility: 🟢 Hoog / 🟡 Middel / 🔴 Laag | Effort: 🔨🔨🔨
+
+▸ Pro: ...
+▸ Con: ...
+▸ Vereist: ..."
+                                oninput="updateSolution('${solution.id}', this.value)"
+                            >${solution.content}</textarea>
+                        </div>
+                    </div>
+                    ${canvas.solutions.length > 1 ? `<button class="solution-delete" onclick="deleteSolution('${solution.id}')">🗑️</button>` : ''}
+                </div>
+            `).join('');
+            
+            contentEl.innerHTML = `
+                <div class="canvas">
+                    <div class="header">
+                        <input type="text" value="${canvas.title}" placeholder="Probleem titel..." oninput="updateActiveCanvas({title: this.value})">
+                        <div class="impact-score">
+                            <span>Impact:</span>
+                            <span id="stars"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="section problem-statement">
+                        <div class="section-title">🎯 Problem Statement</div>
+                        <div class="section-content">
+                            <textarea placeholder="Beschrijf het kernprobleem..." oninput="updateActiveCanvas({problem: this.value})">${canvas.problem}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="section context ${!sections.context ? 'hidden-section' : ''}">
+                        <div class="section-title">🔥 Context - Waarom Nu Urgent?</div>
+                        <div class="section-content">
+                            <textarea placeholder="Waarom is dit nu urgent?" oninput="updateActiveCanvas({context: this.value})">${canvas.context}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="section current-state">
+                        <div class="section-title">📸 Current State</div>
+                        <div class="section-content">
+                            <textarea placeholder="Wat zien we nu? (feiten)" oninput="updateActiveCanvas({current: this.value})">${canvas.current}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="section root-causes">
+                        <div class="section-title">🔍 Root Causes</div>
+                        <div class="section-content">
+                            <textarea placeholder="Waarom gebeurt dit?" oninput="updateActiveCanvas({rootcauses: this.value})">${canvas.rootcauses}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="section desired-state ${!sections.desired ? 'hidden-section' : ''}">
+                        <div class="section-title">✨ Desired State</div>
+                        <div class="section-content">
+                            <textarea placeholder="Hoe zou het eruit moeten zien?" oninput="updateActiveCanvas({desired: this.value})">${canvas.desired}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="section impact-areas">
+                        <div class="section-title">💥 Impact Op</div>
+                        <div class="section-content">
+                            <textarea placeholder="Wat is de impact?" oninput="updateActiveCanvas({impact: this.value})">${canvas.impact}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="section solutions-container">
+                        <div class="solutions-wrapper">
+                            ${solutionsHtml}
+                            <button class="add-solution-btn" onclick="addSolution()">
+                                <span>➕</span>
+                                <span>Oplossing Toevoegen</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="section stakeholders ${!sections.stakeholders ? 'hidden-section' : ''}">
+                        <div class="section-title">👥 Stakeholders</div>
+                        <div class="section-content">
+                            <textarea placeholder="Wie moet erbij betrokken worden?" oninput="updateActiveCanvas({stakeholders: this.value})">${canvas.stakeholders}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="section recommendation">
+                        <div class="section-title">🚦 Aanbeveling</div>
+                        <div class="section-content">
+                            <textarea placeholder="Wat is de aanbeveling?" oninput="updateActiveCanvas({recommendation: this.value})">${canvas.recommendation}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="section next-steps">
+                        <div class="section-title">📋 Next Steps</div>
+                        <div class="section-content">
+                            <textarea placeholder="Concrete acties..." oninput="updateActiveCanvas({nextsteps: this.value})">${canvas.nextsteps}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            renderStars();
+            updateToggleButtons();
+        }
         
         function renderStars() {
+            const canvas = getActiveCanvas();
+            if (!canvas) return;
+            
             const starsEl = document.getElementById('stars');
+            if (!starsEl) return;
+            
             starsEl.innerHTML = '';
             for (let i = 1; i <= 5; i++) {
                 const star = document.createElement('span');
-                star.className = 'star ' + (i <= currentRating ? 'active' : 'inactive');
+                star.className = 'star ' + (i <= canvas.rating ? 'active' : 'inactive');
                 star.textContent = '⭐️';
-                star.onclick = () => setRating(i);
+                star.onclick = () => {
+                    updateActiveCanvas({ rating: i });
+                    renderStars();
+                };
                 starsEl.appendChild(star);
             }
         }
         
-        function setRating(rating) {
-            currentRating = rating;
-            renderStars();
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('problemCanvases', JSON.stringify(canvases));
+                localStorage.setItem('activeCanvasId', activeCanvasId);
+            } catch (e) {
+                console.error('Could not save to localStorage:', e);
+            }
         }
         
-        function getCanvasData() {
-            return {
-                title: document.getElementById('title').value,
-                rating: currentRating,
-                problem: document.getElementById('problem').value,
-                context: document.getElementById('context').value,
-                current: document.getElementById('current').value,
-                rootcauses: document.getElementById('rootcauses').value,
-                desired: document.getElementById('desired').value,
-                impact: document.getElementById('impact').value,
-                solution1: document.getElementById('solution1').value,
-                solution2: document.getElementById('solution2').value,
-                stakeholders: document.getElementById('stakeholders').value,
-                recommendation: document.getElementById('recommendation').value,
-                nextsteps: document.getElementById('nextsteps').value
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('problemCanvases');
+                const savedActiveId = localStorage.getItem('activeCanvasId');
+                
+                if (saved) {
+                    canvases = JSON.parse(saved);
+                    activeCanvasId = savedActiveId;
+                    
+                    if (!canvases.find(c => c.id === activeCanvasId)) {
+                        activeCanvasId = canvases.length > 0 ? canvases[0].id : null;
+                    }
+                }
+                
+                if (canvases.length === 0) {
+                    createNewCanvas();
+                }
+            } catch (e) {
+                console.error('Could not load from localStorage:', e);
+                createNewCanvas();
+            }
+        }
+        
+        function exportAllCanvases() {
+            const data = {
+                canvases: canvases,
+                exportedAt: new Date().toISOString(),
+                version: '1.0'
             };
-        }
-        
-        function setCanvasData(data) {
-            document.getElementById('title').value = data.title || '';
-            currentRating = data.rating || 3;
-            document.getElementById('problem').value = data.problem || '';
-            document.getElementById('context').value = data.context || '';
-            document.getElementById('current').value = data.current || '';
-            document.getElementById('rootcauses').value = data.rootcauses || '';
-            document.getElementById('desired').value = data.desired || '';
-            document.getElementById('impact').value = data.impact || '';
-            document.getElementById('solution1').value = data.solution1 || '';
-            document.getElementById('solution2').value = data.solution2 || '';
-            document.getElementById('stakeholders').value = data.stakeholders || '';
-            document.getElementById('recommendation').value = data.recommendation || '';
-            document.getElementById('nextsteps').value = data.nextsteps || '';
-            renderStars();
-        }
-        
-        function downloadCanvas() {
-            const data = getCanvasData();
+            
             const json = JSON.stringify(data, null, 2);
             const blob = new Blob([json], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `problem-canvas-${data.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.json`;
+            a.download = `problem-canvases-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
         
-        function uploadCanvas(event) {
+        function importAllCanvases(event) {
             const file = event.target.files[0];
             if (!file) return;
             
@@ -436,7 +833,23 @@ Rationale: Geeft beste balans tussen betrouwbaarheid en development speed. ROI b
             reader.onload = (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
-                    setCanvasData(data);
+                    
+                    if (data.canvases && Array.isArray(data.canvases)) {
+                        if (confirm(`Je gaat ${data.canvases.length} canvas(sen) importeren. Huidige canvassen toevoegen of vervangen?`)) {
+                            // Vervangen
+                            canvases = data.canvases;
+                        } else {
+                            // Toevoegen
+                            canvases = [...canvases, ...data.canvases];
+                        }
+                        
+                        activeCanvasId = canvases.length > 0 ? canvases[0].id : null;
+                        saveToLocalStorage();
+                        renderCanvasList();
+                        renderActiveCanvas();
+                    } else {
+                        alert('Invalid file format');
+                    }
                 } catch (err) {
                     alert('Error loading file: ' + err.message);
                 }
@@ -445,28 +858,10 @@ Rationale: Geeft beste balans tussen betrouwbaarheid en development speed. ROI b
             event.target.value = '';
         }
         
-        function newCanvas() {
-            if (confirm('Weet je zeker dat je een nieuw canvas wilt starten? Sla eerst je huidige canvas op!')) {
-                setCanvasData({
-                    title: '',
-                    rating: 3,
-                    problem: '',
-                    context: '',
-                    current: '',
-                    rootcauses: '',
-                    desired: '',
-                    impact: '',
-                    solution1: '',
-                    solution2: '',
-                    stakeholders: '',
-                    recommendation: '',
-                    nextsteps: ''
-                });
-            }
-        }
-        
         // Initialize
-        renderStars();
+        loadFromLocalStorage();
+        renderCanvasList();
+        renderActiveCanvas();
     </script>
 </body>
 </html>
