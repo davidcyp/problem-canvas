@@ -225,8 +225,40 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: auto repeat(3, 1fr) auto;
             gap: 12px;
+        }
+        
+        /* Dynamic grid rows based on visible sections */
+        .canvas.layout-full {
+            grid-template-rows: auto repeat(3, 1fr) auto;
+        }
+        
+        .canvas.layout-no-context {
+            grid-template-rows: auto 1fr repeat(2, 1fr) auto;
+        }
+        
+        .canvas.layout-no-desired {
+            grid-template-rows: auto repeat(2, 1fr) 1fr auto;
+        }
+        
+        .canvas.layout-no-stakeholders {
+            grid-template-rows: auto repeat(3, 1fr) auto;
+        }
+        
+        .canvas.layout-no-context-desired {
+            grid-template-rows: auto 1fr 1fr auto;
+        }
+        
+        .canvas.layout-no-context-stakeholders {
+            grid-template-rows: auto 1fr repeat(2, 1fr) auto;
+        }
+        
+        .canvas.layout-no-desired-stakeholders {
+            grid-template-rows: auto repeat(2, 1fr) 1fr auto;
+        }
+        
+        .canvas.layout-minimal {
+            grid-template-rows: auto 1fr 1fr auto;
         }
         
         .section {
@@ -318,19 +350,81 @@
             background: transparent;
         }
         
-        .problem-statement { grid-column: 1 / 3; background: #fff5e6; border-color: #ff9800; }
-        .context { grid-column: 3 / 5; background: #ffebee; border-color: #e53935; }
-        .context.hidden-section ~ .problem-statement { grid-column: 1 / 5; }
-        .current-state { grid-column: 1 / 2; }
-        .root-causes { grid-column: 2 / 3; background: #f3e5f5; border-color: #9c27b0; }
-        .desired-state { grid-column: 3 / 4; background: #e8f5e9; border-color: #4caf50; }
-        .impact-areas { grid-column: 4 / 5; }
-        .impact-areas:has(~ .desired-state.hidden-section) { grid-column: 3 / 5; }
-        .solutions-container { grid-column: 1 / 5; }
-        .stakeholders { grid-column: 1 / 2; }
-        .recommendation { grid-column: 2 / 4; background: #fff9e6; border-color: #ffc107; }
-        .recommendation:has(~ .stakeholders.hidden-section) { grid-column: 1 / 4; }
-        .next-steps { grid-column: 4 / 5; background: #e8f5e9; border-color: #4caf50; }
+        .problem-statement { 
+            grid-column: 1 / 3; 
+            background: #fff5e6; 
+            border-color: #ff9800; 
+        }
+        
+        .context { 
+            grid-column: 3 / 5; 
+            background: #ffebee; 
+            border-color: #e53935; 
+        }
+        
+        /* When context is hidden, problem statement takes full width */
+        .canvas.layout-no-context .problem-statement,
+        .canvas.layout-no-context-desired .problem-statement,
+        .canvas.layout-no-context-stakeholders .problem-statement,
+        .canvas.layout-minimal .problem-statement {
+            grid-column: 1 / 5;
+        }
+        
+        .current-state { 
+            grid-column: 1 / 2; 
+        }
+        
+        .root-causes { 
+            grid-column: 2 / 3; 
+            background: #f3e5f5; 
+            border-color: #9c27b0; 
+        }
+        
+        .desired-state { 
+            grid-column: 3 / 4; 
+            background: #e8f5e9; 
+            border-color: #4caf50; 
+        }
+        
+        .impact-areas { 
+            grid-column: 4 / 5; 
+        }
+        
+        /* When desired state is hidden, impact takes more space */
+        .canvas.layout-no-desired .impact-areas,
+        .canvas.layout-no-context-desired .impact-areas,
+        .canvas.layout-no-desired-stakeholders .impact-areas,
+        .canvas.layout-minimal .impact-areas {
+            grid-column: 3 / 5;
+        }
+        
+        .solutions-container { 
+            grid-column: 1 / 5; 
+        }
+        
+        .stakeholders { 
+            grid-column: 1 / 2; 
+        }
+        
+        .recommendation { 
+            grid-column: 2 / 4; 
+            background: #fff9e6; 
+            border-color: #ffc107; 
+        }
+        
+        /* When stakeholders is hidden, recommendation takes more space */
+        .canvas.layout-no-stakeholders .recommendation,
+        .canvas.layout-no-context-stakeholders .recommendation,
+        .canvas.layout-no-desired-stakeholders .recommendation,
+        .canvas.layout-minimal .recommendation {
+            grid-column: 1 / 4;
+        }
+        
+        .next-steps { 
+            grid-column: 4 / 5; 
+            background: #e8f5e9; 
+            border-color: #4caf50; 
+        }
         
         .solutions-wrapper {
             display: flex;
