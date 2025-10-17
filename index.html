@@ -226,39 +226,7 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 12px;
-        }
-        
-        /* Dynamic grid rows based on visible sections */
-        .canvas.layout-full {
-            grid-template-rows: auto repeat(3, 1fr) auto;
-        }
-        
-        .canvas.layout-no-context {
-            grid-template-rows: auto 1fr repeat(2, 1fr) auto;
-        }
-        
-        .canvas.layout-no-desired {
-            grid-template-rows: auto repeat(2, 1fr) 1fr auto;
-        }
-        
-        .canvas.layout-no-stakeholders {
-            grid-template-rows: auto repeat(3, 1fr) auto;
-        }
-        
-        .canvas.layout-no-context-desired {
-            grid-template-rows: auto 1fr 1fr auto;
-        }
-        
-        .canvas.layout-no-context-stakeholders {
-            grid-template-rows: auto 1fr repeat(2, 1fr) auto;
-        }
-        
-        .canvas.layout-no-desired-stakeholders {
-            grid-template-rows: auto repeat(2, 1fr) 1fr auto;
-        }
-        
-        .canvas.layout-minimal {
-            grid-template-rows: auto 1fr 1fr auto;
+            grid-auto-rows: minmax(150px, auto);
         }
         
         .section {
@@ -267,11 +235,12 @@
             background: white;
             display: flex;
             flex-direction: column;
-            min-height: 120px;
+            min-height: 150px;
         }
         
         .header {
             grid-column: 1 / -1;
+            grid-row: 1;
             background: #1a1a1a;
             color: white;
             padding: 16px 20px;
@@ -340,88 +309,90 @@
         
         textarea {
             width: 100%;
-            height: 100%;
+            min-height: 100px;
             border: none;
-            resize: none;
+            resize: vertical;
             font-family: inherit;
             font-size: 11px;
             line-height: 1.5;
             outline: none;
             background: transparent;
+            overflow-y: hidden;
         }
         
         .problem-statement { 
-            grid-column: 1 / 3; 
+            grid-column: 1 / 3;
+            grid-row: 2;
             background: #fff5e6; 
             border-color: #ff9800; 
         }
         
         .context { 
-            grid-column: 3 / 5; 
+            grid-column: 3 / 5;
+            grid-row: 2;
             background: #ffebee; 
             border-color: #e53935; 
         }
         
         /* When context is hidden, problem statement takes full width */
-        .canvas.layout-no-context .problem-statement,
-        .canvas.layout-no-context-desired .problem-statement,
-        .canvas.layout-no-context-stakeholders .problem-statement,
-        .canvas.layout-minimal .problem-statement {
+        .canvas:not(:has(.context:not(.hidden-section))) .problem-statement {
             grid-column: 1 / 5;
         }
         
         .current-state { 
-            grid-column: 1 / 2; 
+            grid-column: 1 / 2;
+            grid-row: 3;
         }
         
         .root-causes { 
-            grid-column: 2 / 3; 
+            grid-column: 2 / 3;
+            grid-row: 3;
             background: #f3e5f5; 
             border-color: #9c27b0; 
         }
         
         .desired-state { 
-            grid-column: 3 / 4; 
+            grid-column: 3 / 4;
+            grid-row: 3;
             background: #e8f5e9; 
             border-color: #4caf50; 
         }
         
         .impact-areas { 
-            grid-column: 4 / 5; 
+            grid-column: 4 / 5;
+            grid-row: 3;
         }
         
         /* When desired state is hidden, impact takes more space */
-        .canvas.layout-no-desired .impact-areas,
-        .canvas.layout-no-context-desired .impact-areas,
-        .canvas.layout-no-desired-stakeholders .impact-areas,
-        .canvas.layout-minimal .impact-areas {
+        .canvas:not(:has(.desired-state:not(.hidden-section))) .impact-areas {
             grid-column: 3 / 5;
         }
         
         .solutions-container { 
-            grid-column: 1 / 5; 
+            grid-column: 1 / 5;
+            grid-row: 4;
         }
         
         .stakeholders { 
-            grid-column: 1 / 2; 
+            grid-column: 1 / 2;
+            grid-row: 5;
         }
         
         .recommendation { 
-            grid-column: 2 / 4; 
+            grid-column: 2 / 4;
+            grid-row: 5;
             background: #fff9e6; 
             border-color: #ffc107; 
         }
         
         /* When stakeholders is hidden, recommendation takes more space */
-        .canvas.layout-no-stakeholders .recommendation,
-        .canvas.layout-no-context-stakeholders .recommendation,
-        .canvas.layout-no-desired-stakeholders .recommendation,
-        .canvas.layout-minimal .recommendation {
+        .canvas:not(:has(.stakeholders:not(.hidden-section))) .recommendation {
             grid-column: 1 / 4;
         }
         
         .next-steps { 
-            grid-column: 4 / 5; 
+            grid-column: 4 / 5;
+            grid-row: 5;
             background: #e8f5e9; 
             border-color: #4caf50; 
         }
@@ -444,7 +415,7 @@
             background: #e3f2fd;
             display: flex;
             flex-direction: column;
-            min-height: 120px;
+            min-height: 150px;
         }
         
         .solution-delete {
@@ -665,6 +636,21 @@
             renderCanvasList();
         }
         
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+        
+        function setupTextareaAutoResize() {
+            const textareas = document.querySelectorAll('textarea');
+            textareas.forEach(textarea => {
+                autoResizeTextarea(textarea);
+                textarea.addEventListener('input', function() {
+                    autoResizeTextarea(this);
+                });
+            });
+        }
+        
         function addSolution() {
             const canvas = getActiveCanvas();
             if (!canvas) return;
@@ -696,6 +682,12 @@
             if (solution) {
                 solution.content = content;
                 saveToLocalStorage();
+            }
+            
+            // Auto-resize the textarea that was just updated
+            const textarea = event.target;
+            if (textarea && textarea.tagName === 'TEXTAREA') {
+                autoResizeTextarea(textarea);
             }
         }
         
@@ -753,7 +745,7 @@ Feasibility: 🟢 Hoog / 🟡 Middel / 🔴 Laag | Effort: 🔨🔨🔨
 ▸ Pro: ...
 ▸ Con: ...
 ▸ Vereist: ..."
-                                oninput="updateSolution('${solution.id}', this.value)"
+                                oninput="updateSolution('${solution.id}', this.value); autoResizeTextarea(this);"
                             >${solution.content}</textarea>
                         </div>
                     </div>
@@ -774,42 +766,42 @@ Feasibility: 🟢 Hoog / 🟡 Middel / 🔴 Laag | Effort: 🔨🔨🔨
                     <div class="section problem-statement">
                         <div class="section-title">🎯 Problem Statement</div>
                         <div class="section-content">
-                            <textarea placeholder="Beschrijf het kernprobleem..." oninput="updateActiveCanvas({problem: this.value})">${canvas.problem}</textarea>
+                            <textarea placeholder="Beschrijf het kernprobleem..." oninput="updateActiveCanvas({problem: this.value}); autoResizeTextarea(this);">${canvas.problem}</textarea>
                         </div>
                     </div>
                     
                     <div class="section context ${!sections.context ? 'hidden-section' : ''}">
                         <div class="section-title">🔥 Context - Waarom Nu Urgent?</div>
                         <div class="section-content">
-                            <textarea placeholder="Waarom is dit nu urgent?" oninput="updateActiveCanvas({context: this.value})">${canvas.context}</textarea>
+                            <textarea placeholder="Waarom is dit nu urgent?" oninput="updateActiveCanvas({context: this.value}); autoResizeTextarea(this);">${canvas.context}</textarea>
                         </div>
                     </div>
                     
                     <div class="section current-state">
                         <div class="section-title">📸 Current State</div>
                         <div class="section-content">
-                            <textarea placeholder="Wat zien we nu? (feiten)" oninput="updateActiveCanvas({current: this.value})">${canvas.current}</textarea>
+                            <textarea placeholder="Wat zien we nu? (feiten)" oninput="updateActiveCanvas({current: this.value}); autoResizeTextarea(this);">${canvas.current}</textarea>
                         </div>
                     </div>
                     
                     <div class="section root-causes">
                         <div class="section-title">🔍 Root Causes</div>
                         <div class="section-content">
-                            <textarea placeholder="Waarom gebeurt dit?" oninput="updateActiveCanvas({rootcauses: this.value})">${canvas.rootcauses}</textarea>
+                            <textarea placeholder="Waarom gebeurt dit?" oninput="updateActiveCanvas({rootcauses: this.value}); autoResizeTextarea(this);">${canvas.rootcauses}</textarea>
                         </div>
                     </div>
                     
                     <div class="section desired-state ${!sections.desired ? 'hidden-section' : ''}">
                         <div class="section-title">✨ Desired State</div>
                         <div class="section-content">
-                            <textarea placeholder="Hoe zou het eruit moeten zien?" oninput="updateActiveCanvas({desired: this.value})">${canvas.desired}</textarea>
+                            <textarea placeholder="Hoe zou het eruit moeten zien?" oninput="updateActiveCanvas({desired: this.value}); autoResizeTextarea(this);">${canvas.desired}</textarea>
                         </div>
                     </div>
                     
                     <div class="section impact-areas">
                         <div class="section-title">💥 Impact Op</div>
                         <div class="section-content">
-                            <textarea placeholder="Wat is de impact?" oninput="updateActiveCanvas({impact: this.value})">${canvas.impact}</textarea>
+                            <textarea placeholder="Wat is de impact?" oninput="updateActiveCanvas({impact: this.value}); autoResizeTextarea(this);">${canvas.impact}</textarea>
                         </div>
                     </div>
                     
@@ -826,21 +818,21 @@ Feasibility: 🟢 Hoog / 🟡 Middel / 🔴 Laag | Effort: 🔨🔨🔨
                     <div class="section stakeholders ${!sections.stakeholders ? 'hidden-section' : ''}">
                         <div class="section-title">👥 Stakeholders</div>
                         <div class="section-content">
-                            <textarea placeholder="Wie moet erbij betrokken worden?" oninput="updateActiveCanvas({stakeholders: this.value})">${canvas.stakeholders}</textarea>
+                            <textarea placeholder="Wie moet erbij betrokken worden?" oninput="updateActiveCanvas({stakeholders: this.value}); autoResizeTextarea(this);">${canvas.stakeholders}</textarea>
                         </div>
                     </div>
                     
                     <div class="section recommendation">
                         <div class="section-title">🚦 Aanbeveling</div>
                         <div class="section-content">
-                            <textarea placeholder="Wat is de aanbeveling?" oninput="updateActiveCanvas({recommendation: this.value})">${canvas.recommendation}</textarea>
+                            <textarea placeholder="Wat is de aanbeveling?" oninput="updateActiveCanvas({recommendation: this.value}); autoResizeTextarea(this);">${canvas.recommendation}</textarea>
                         </div>
                     </div>
                     
                     <div class="section next-steps">
                         <div class="section-title">📋 Next Steps</div>
                         <div class="section-content">
-                            <textarea placeholder="Concrete acties..." oninput="updateActiveCanvas({nextsteps: this.value})">${canvas.nextsteps}</textarea>
+                            <textarea placeholder="Concrete acties..." oninput="updateActiveCanvas({nextsteps: this.value}); autoResizeTextarea(this);">${canvas.nextsteps}</textarea>
                         </div>
                     </div>
                 </div>
@@ -848,6 +840,11 @@ Feasibility: 🟢 Hoog / 🟡 Middel / 🔴 Laag | Effort: 🔨🔨🔨
             
             renderStars();
             updateToggleButtons();
+            
+            // Setup auto-resize for all textareas after rendering
+            setTimeout(() => {
+                setupTextareaAutoResize();
+            }, 0);
         }
         
         function renderStars() {
